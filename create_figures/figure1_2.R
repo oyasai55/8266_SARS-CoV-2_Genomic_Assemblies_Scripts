@@ -224,25 +224,29 @@ ggsave("./output/fig1.pdf", fig1, width = 20, height = 20, dpi=300)
 
 ####figure 2####
 fig2_data <- read_csv("./data/fig2_data.csv")
-a = factor("tested")
-b = factor("positive")
+fig2_data2 <- fig2_data %>%
+  pivot_longer(cols = c(Samples, Positive.samples), 
+               names_to = "Category", values_to = "Count") %>%
+  mutate(Category = factor(Category, levels = c("Samples", "Positive.samples"),
+                           labels = c("tested (left Y-axis)", "positive (right Y-axis)")))
 
-p_sb <- ggplot() +
-  geom_area(data = fig2_data, aes(x = Date, y = Samples, fill = a),
-            linewidth = 1, alpha = 0.5) +
-  geom_line(data = fig2_data, aes(x = Date, y = Positive.samples/0.01, color = b), 
-            linewidth = 1.2, alpha = 0.3) +
+p_sb <- ggplot(fig2_data2, aes(x = Date)) +
+  geom_area(data = filter(fig2_data2, Category == "tested (left Y-axis)"),
+            aes(y = Count, fill = Category), linewidth = 1, alpha = 0.5) +
+  geom_line(data = filter(fig2_data2, Category == "positive (right Y-axis)"),
+            aes(y = Count / 0.01, color = Category), linewidth = 1.2, alpha = 0.3) +
+  scale_fill_manual(values = c("gray20")) +
+  scale_color_manual(values = c("blue")) +
   scale_x_date(limits = c(as.Date("2020-07-01"), as.Date("2023-01-16")),
                date_breaks = "2 months", labels = scales::label_date_short()) +
   scale_y_continuous(label=scientific_10,
                      sec.axis = sec_axis(~. *0.01, name = "positive cases", labels = derive())) +
-  labs(title = "Number of Tested and Positive cases of SARS-CoV-2 in SBCVIC", x = "date", y = "tested cases") +
+  labs(title = "Number of Tested and Positive Cases of SARS-CoV-2 in SBCVIC",
+       x = "date", y = "tested cases") +
   theme_bw() +
   theme(axis.text = element_text(size = 20), axis.title = element_text(size = 20),
         plot.title = element_text(size = 20),
         legend.position = "top", legend.text = element_text(size = 20),
-        legend.title=element_blank()) + 
-  scale_color_manual(values = c("blue")) +
-  scale_fill_manual(values = c("gray20"))
+        legend.title=element_blank())
 
 ggsave("./output/fig2.pdf", p_sb, width = 20, height = 5, dpi=300)
