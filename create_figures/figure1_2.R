@@ -2,9 +2,9 @@
 ####figure1_2.R####
 #!/usr/bin/env R
 library(tidyverse) #version 2.0.0
-library(colorspace) #version 2.1-1
-library(cowplot) #version 1.1.3
-library(scales) #version 1.3.0
+library(colorspace) #version 2.1-2
+library(cowplot) #version 1.2.0
+library(scales) #version 1.4.0
 
 #working directory
 if (!interactive()) {
@@ -33,7 +33,7 @@ p1a <- ggplot(daily_infect, aes(x = Date, y = cases)) +
   geom_area() +
   scale_x_date(limits = c(as.Date("2020-07-01"), as.Date("2023-01-16")), 
                date_breaks = "2 months", labels = scales::label_date_short()) +
-  scale_y_continuous(label=scientific_10) +
+  scale_y_continuous(labels = scientific_10) +
   labs(title = "Newly confirmed COVID-19 cases in Japan", x = "date", y = "cases") +
   theme_bw() +
   theme(axis.text = element_text(size = 20), axis.title = element_text(size = 20),
@@ -125,7 +125,7 @@ p1b <- ggplot(fig1b_data3, aes(x = yearmon, fill = lineages)) +
     values = own_col) +
     scale_x_date(limits = c(as.Date("2020-07-01"), max(as.Date("2023-01-16"))),
                  date_breaks = "2 months", labels = scales::label_date_short()) +
-  scale_y_continuous(label=scientific_10) +
+  scale_y_continuous(labels = scientific_10) +
   labs(title = "GISAID, Japan, n=539,504", x = "date", y = "sequences") +
   theme_bw() +
   theme(axis.text = element_text(size = 20), axis.title = element_text(size = 20),
@@ -190,13 +190,13 @@ fig1c_data3$yearmon <- paste0(fig1c_data3$yearmon, "-1")
 fig1c_data3$yearmon <- as.Date(fig1c_data3$yearmon, format = "%Y-%m-%d") 
 
 p1c <- ggplot(fig1c_data3, aes(x = yearmon, fill = lineages)) +
-  geom_bar(color = "black", size = 0.1) +
+  geom_bar(color = "black") +
   scale_fill_manual(
     breaks = order,
     values = own_col) +
     scale_x_date(limits = c(as.Date("2020-07-01"), max(as.Date("2023-01-16"))), 
                date_breaks = "2 months", labels = scales::label_date_short()) +
-  scale_y_continuous(label=scientific_10) +
+  scale_y_continuous(labels = scientific_10) +
   labs(title = "Asymptomatic, SBCVIC, Japan, n=2,917", x = "date", y = "sequences") +
   theme_bw() +
   theme(axis.text = element_text(size = 20), axis.title = element_text(size = 20),
@@ -205,7 +205,7 @@ p1c <- ggplot(fig1c_data3, aes(x = yearmon, fill = lineages)) +
 
 p1c_legend <- get_legend(
   ggplot(fig1c_data3, aes(x = yearmon, fill = lineages)) +
-  geom_bar(color = "black", size = 0.1) +
+  geom_bar(color = "black") +
     theme(legend.text = element_text(size = 16),
           legend.title = element_text(size = 20)) +
     scale_fill_manual(
@@ -228,25 +228,42 @@ fig2_data2 <- fig2_data %>%
   pivot_longer(cols = c(Samples, Positive.samples), 
                names_to = "Category", values_to = "Count") %>%
   mutate(Category = factor(Category, levels = c("Samples", "Positive.samples"),
-                           labels = c("tested (left Y-axis)", "positive (right Y-axis)")))
+                           labels = c("tested", "positive")))
 
-p_sb <- ggplot(fig2_data2, aes(x = Date)) +
-  geom_area(data = filter(fig2_data2, Category == "tested (left Y-axis)"),
-            aes(y = Count, fill = Category), linewidth = 1, alpha = 0.5) +
-  geom_line(data = filter(fig2_data2, Category == "positive (right Y-axis)"),
-            aes(y = Count / 0.01, color = Category), linewidth = 1.2, alpha = 0.3) +
+p_sb_tested <- ggplot(fig2_data2, aes(x = Date)) +
+  geom_area(data = filter(fig2_data2, Category == "tested"),
+            aes(y = Count, fill = Category), linewidth = 1) +
   scale_fill_manual(values = c("gray20")) +
-  scale_color_manual(values = c("blue")) +
   scale_x_date(limits = c(as.Date("2020-07-01"), as.Date("2023-01-16")),
                date_breaks = "2 months", labels = scales::label_date_short()) +
-  scale_y_continuous(label=scientific_10,
-                     sec.axis = sec_axis(~. *0.01, name = "positive cases", labels = derive())) +
-  labs(title = "Number of Tested and Positive Cases of SARS-CoV-2 in SBCVIC",
-       x = "date", y = "tested cases") +
+  scale_y_continuous(labels = scientific_10,
+                     limits = c(0, 25000)) +
+  labs(title = "Number of People Tested for SARS-CoV-2 in SBCVIC",
+       x = "date", y = "tested individuals") +
   theme_bw() +
   theme(axis.text = element_text(size = 20), axis.title = element_text(size = 20),
         plot.title = element_text(size = 20),
-        legend.position = "top", legend.text = element_text(size = 20),
-        legend.title=element_blank())
+        legend.position = "none")
 
-ggsave("./output/fig2.pdf", p_sb, width = 20, height = 5, dpi=300)
+p_sb_posi <- ggplot(fig2_data2, aes(x = Date)) +
+  geom_line(data = filter(fig2_data2, Category == "positive"),
+            aes(y = Count, color = Category), linewidth = 1.2, alpha = 0.5) +
+  scale_color_manual(values = c("blue")) +
+  scale_x_date(limits = c(as.Date("2020-07-01"), as.Date("2023-01-16")),
+               date_breaks = "2 months", labels = scales::label_date_short()) +
+  scale_y_continuous(labels = scientific_10) +
+  labs(title = "Number of SARS-CoV-2 Positive Cases in SBCVIC",
+       x = "date", y = "positive cases") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 20), axis.title = element_text(size = 20),
+        plot.title = element_text(size = 20),
+        legend.position = "none")
+
+fig2 <- plot_grid(p_sb_tested,
+                  p_sb_posi,
+                  ncol = 1, 
+                  labels = c("A", "B"),
+                  label_size = 25)
+fig2 <- ggdraw(fig2) + theme(plot.margin = margin(10, 50, 10, 10)) 
+
+ggsave("./output/fig2.pdf", fig2, width = 20, height = 10, dpi=300)
